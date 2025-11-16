@@ -13,7 +13,7 @@ The aim of this project was to create a Gated Recurrent Unit from scratch, in C+
 Firstly, I basically chose C++ because I'm much more familiar with it than Python. But more generally, the main reason to use C++ here was to fully exploit the capabilities of pointers and adresses, for performance and to exercise low-level memory control (matrices, bias-as-last-row tricks, manual BLAS-like loops).
 
 ## Methodology
-Firstly, I created the GRU class, which uses six different weights. Wx for the input weights, Ux for the hidden layer weights, and Wout for the output weight. These are used inside the forward method to generate the output, and their gradient derivatives are calculated through the backpropagation method. The weights are then updated when the Scope is called, using Adam optimizer. A Dataset method creates the Dataset, while the TrainerClassifier class gathers the training and validation process. For details, please see the bottom of this Readme.
+Firstly, I created the GRU class, which uses six different weights. Wx for the input weights, Ux for the hidden layer weights, and Wout for the output weight. These are used inside the forward method to generate the output, and their gradient derivatives are calculated through the backpropagation method. The weights are then updated when the Scope is called, using Adam optimizer. A Dataset method creates the Dataset, while the TrainerClassifier class gathers the training and validation process. For details, please see [the bottom of this Readme](#methodology-in-detail-how-the-gru-is-implemented).
 
 ### Dataset
 
@@ -104,8 +104,6 @@ NeuralNetwork/
 ```
 
 ---
-
-
 
 ## Methodology in detail: how the GRU is implemented
 
