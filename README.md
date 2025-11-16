@@ -39,7 +39,7 @@ We have two slightly different architectures. A many-to-many, and a many-to-one.
 
 ### Observations
 - Results on the binary nature of the sum of binary numbers database. When ran into the whole training database, the model gives the following results:
-![Plots](Many-to-Many/img/latest_output.png)
+![Plots](img/latest_output.png)
 
 Here, values are plotted after each epochs. The early stopper stopped 3 epochs before the end. We can see the training accuracy, validation accuracy and training loss for each epochs.
 
@@ -111,46 +111,46 @@ NeuralNetwork/
 
 ### Equations implemented
 
-For each time step $ t $, the code computes:
+For each time step $$t$$, the code computes:
 
-1. $ z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z) $
+1. $$ z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z) $$
 
-2. $ r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r) $
+2. $$ r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r) $$
 
-3. $ \tilde h_t = \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h) $
+3. $$ \tilde h_t = \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h) $$
 
-4. $ h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde h_t $
+4. $$ h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde h_t $$
 
-5. $ y_t = \sigma(h_t W_{out}) $
+5. $$ y_t = \sigma(h_t W_{out}) $$
 
 
 These are implemented with the following naming in the code:
 
-* `m_Wz`, `m_Wr`, `m_What` — input-to-gates weights (shape `(input_dim + 1) x hidden_dim`, bias encoded as last row)
-* `m_Uz`, `m_Ur`, `m_Uhat` — hidden-to-gates weights (shape `(hidden_dim + 1) x hidden_dim`, bias as last row)
-* `m_Wout` — hidden-to-output weight (shape `(hidden_dim) x output_dim`)
-* Activations stored per timestep: `m_aZ[t]` (z), `m_aR[t]` (r), `m_aHat[t]` (tilde h), and hidden states `m_hiddenStates[t]`. Outputs are `m_Y[t]`.
+- ```m_Wz```, ```m_Wr```, ```m_What``` — input-to-gates weights (shape ```(input_dim + 1) x hidden_dim```, bias encoded as last row)
+- ```m_Uz```, ```m_Ur```, ```m_Uhat``` — hidden-to-gates weights (shape ```(hidden_dim + 1) x hidden_dim```, bias as last row)
+- ```m_Wout``` — hidden-to-output weight (shape ```(hidden_dim) x output_dim```)
+- Activations stored per timestep: ```m_aZ[t]``` ($$z$$), ```m_aR[t]``` ($$r$$), ```m_aHat[t]``` ($$\tilde h$$), and hidden states ```m_hiddenStates[t]```. Outputs are ```m_Y[t]```.
 
 ### Key implementation details (mapping to your code)
 
-* **Bias trick:** input matrices are multiplied with weight matrices that include bias as their last row. The helper `MATRIX_OPERATION::addbiases_then_mult(input, weights)` computes `input.addBias() * weights` without materializing the augmented matrix.
-* **Backprop weight accumulation:** `MATRIX_OPERATION::compute_weigths(weights, input, delta)` performs `weights += input.addBias().T * delta` (consistent with bias-last-row storage).
-* **Backprop of U* into hidden:** to propagate deltas into previous hidden, the code calls `m_U*.removeBias().T()` (removes last bias row then transposes).
-* **Derivatives:** derivatives for activation functions are computed from **stored activations**, e.g. sigmoid'(s) = s*(1-s), tanh'(a) = 1 - a^2. This avoids recomputing nonlinearities on pre-activations and is numerically stable.
-* **State initialization:** `m_hiddenStates[0]` is explicitly set to zero (safety to avoid garbage memory).
-* **Per-timestep storage:** all intermediate deltas are stored in per-time-step vectors (`m_dZ[t]`, `m_dR[t]`, `m_dHat[t]`, `m_dH[t]`, `m_dY[t]`) so no single variable must persist across loop iterations.
+- **Bias trick:** input matrices are multiplied with weight matrices that include bias as their last row. The helper ```MATRIX_OPERATION::addbiases_then_mult(input, weights)``` computes ```input.addBias() * weights``` without materializing the augmented matrix.
+- **Backprop weight accumulation:** ```MATRIX_OPERATION::compute_weigths(weights, input, delta)``` performs ```weights += input.addBias().T * delta``` (consistent with bias-last-row storage).
+- **Backprop of U* into hidden:** to propagate deltas into previous hidden, the code calls ```m_U*.removeBias().T()``` (removes last bias row then transposes).
+- **Derivatives:** derivatives for activation functions are computed from **stored activations**, e.g. ```sigmoid'(s) = s*(1-s)```, ```tanh'(a) = 1 - a^2```. This avoids recomputing nonlinearities on pre-activations and is numerically stable.
+- **State initialization:** ```m_hiddenStates[0]``` is explicitly set to zero (safety to avoid garbage memory).
+- **Per-timestep storage:** all intermediate deltas are stored in per-time-step vectors (```m_dZ[t]```, ```m_dR[t]```, ```m_dHat[t]```, ```m_dH[t]```, ```m_dY[t]```) so no single variable must persist across loop iterations.
 
 ### Forward pass
 
-* For each `t` compute preactivations via `addbiases_then_mult` and then apply `ACTIVATION::sigmoid_activation` / `ACTIVATION::tanh_activation`.
-* Build `h_t` from gates as shown above.
-* Compute output `y_t = sigmoid(h_t * m_Wout)`.
+- For each $$t$$, compute preactivations via ```addbiases_then_mult``` and then apply ```ACTIVATION::sigmoid_activation``` / ```ACTIVATION::tanh_activation```.
+- Build $$h_t$$ from gates as shown above.
+- Compute output $$y_t = \sigma(h_t * W_{out})$$.
 
 ### Backpropagation (BPTT)
 
-* Compute output delta `m_dY[t] = (y_pred - y_true)` (binary cross-entropy with sigmoid output).
-* Propagate through `Wout` to obtain `dH` and accumulate contributions from `m_dH[t+1]` (temporal dependency).
-* Split `dH` into branches: contribution to `aHat` (via z), contribution to z, and contribution to r; compute parameter gradients using `compute_weigths`.
-* Remove bias rows from U matrices (`removeBias()`) when backpropagating to hidden states.
-* Gradients are averaged by `1 / (batch_size * seq_len)` before passing to Adam.
-* Optional element-wise clipping can be applied to parameter gradients before the optimizer step.
+- Compute output delta ```m_dY[t] = (y_pred - y_true)``` (binary cross-entropy with sigmoid output).
+- Propagate through ```Wout``` to obtain ```dH``` and accumulate contributions from ```m_dH[t+1]``` (temporal dependency).
+- Split ```dH``` into branches: contribution to ```aHat``` (via $$z$$), contribution to $$z$$, and contribution to $$r$$; compute parameter gradients using ```compute_weigths```.
+- Remove bias rows from U matrices (```removeBias()```) when backpropagating to hidden states.
+- Gradients are averaged by $$\frac{1}{(batch_size * seq_len)}$$ before passing to Adam.
+- Optional element-wise clipping can be applied to parameter gradients before the optimizer step.
