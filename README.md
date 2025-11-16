@@ -113,15 +113,15 @@ NeuralNetwork/
 
 For each time step $$t$$, the code computes:
 
-1. $$ z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z) $$
+1. $$z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)$$
 
-2. $$ r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r) $$
+2. $$r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)$$
 
-3. $$ \tilde h_t = \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h) $$
+3. $$\tilde h_t = \tanh(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h)$$
 
-4. $$ h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde h_t $$
+4. $$h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde h_t$$
 
-5. $$ y_t = \sigma(h_t W_{out}) $$
+5. $$y_t = \sigma(h_t W_{out})$$
 
 
 These are implemented with the following naming in the code:
